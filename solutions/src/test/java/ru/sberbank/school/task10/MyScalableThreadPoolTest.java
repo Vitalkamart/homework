@@ -40,7 +40,7 @@ class MyScalableThreadPoolTest {
         fillTasks();
 
         try {
-            Thread.sleep(1_000);
+            Thread.sleep(100);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -56,7 +56,7 @@ class MyScalableThreadPoolTest {
         pool.stopNow();
 
         try {
-            Thread.sleep(1_000);
+            Thread.sleep(100);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

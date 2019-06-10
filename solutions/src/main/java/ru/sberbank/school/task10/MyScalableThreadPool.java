@@ -17,7 +17,6 @@ public class MyScalableThreadPool implements ThreadPool {
     private final int sizeMax;
     private final Queue<Integer> freeIndexForNewWorker;
     private final Map<Integer, ThreadWorker> poolMap;
-    private final List<ThreadWorker> pool = new ArrayList<>();
     private final Queue<FutureTask> tasks;
 
     public MyScalableThreadPool(int sizeMin, int sizeMax) {
@@ -31,7 +30,6 @@ public class MyScalableThreadPool implements ThreadPool {
         this.freeIndexForNewWorker = new LinkedList<>();
         this.poolMap = new HashMap<>();
         this.tasks = new LinkedList<>();
-//        this.pool = new ThreadWorker[sizeMax];
         fillPoolMap(sizeMin);
     }
 
@@ -45,7 +43,6 @@ public class MyScalableThreadPool implements ThreadPool {
         this.freeIndexForNewWorker = new LinkedList<>();
         this.poolMap = new HashMap<>();
         this.tasks = new LinkedList<>();
-//        this.pool = new ThreadWorker[fixedSize];
         fillPoolMap(fixedSize);
     }
 
@@ -59,15 +56,6 @@ public class MyScalableThreadPool implements ThreadPool {
 
     @Override
     public void start() {
-//        for (int i = 0; i < sizeMin; i++) {
-//            pool.add(new ThreadWorker("ThreadWorker " + i, i));
-//            pool.get(i).start();
-
-//            for (int i = 0; i < pool.length; i++) {
-//                pool[i] = new ThreadWorker("ThreadWorker " + i, i);
-//                pool[i].start();
-//                activeThreads++;
-//            }
         poolMap.forEach((key, worker) -> {
             worker.start();
 
@@ -75,31 +63,12 @@ public class MyScalableThreadPool implements ThreadPool {
                 activeThreads++;
             }
         });
-
-
-//            for (Integer i : poolMap.keySet()) {
-//                ThreadWorker worker = poolMap.get(i);
-//                worker.start();
-//                System.out.println(worker + " started");
-//
-//                synchronized (activeThreadsLock) {
-//                    activeThreads++;
-//                }
-//            }
     }
 
 
     @Override
     public void stopNow() {
         synchronized (poolMap) {
-//            for (ThreadWorker t : pool) {
-//                if (t != null) {
-//                    System.out.println(t + " interrupted");
-//                    t.interrupt();
-//                }
-//                pool.clear();
-
-
             poolMap.forEach((key, worker) -> {
                 worker.interrupt();
             });
@@ -168,91 +137,6 @@ public class MyScalableThreadPool implements ThreadPool {
 
             return taskSize < activeThreads && activeThreads > sizeMin;
         }
-//
-//        int size = tasks.size() + 1; // + 1 because we deed poll before resize method
-//
-//        synchronized (pool) {
-//            List<ThreadWorker> copy = new ArrayList<>(pool);
-//            Iterator iterator = copy.iterator();
-//            while (iterator.hasNext()) {
-//                ThreadWorker worker = (ThreadWorker) iterator.next();
-//                if (worker == null || worker.isInterrupted()) {
-//                    pool.remove(worker);
-//                }
-//            }
-//
-//            if (size > sizeMin && pool.size() < sizeMax) {
-//                int id = pool.size();
-//                pool.add(new ThreadWorker("ThreadWorker " + id, id));
-//            }
-//
-//            int activeThreads = pool.size();
-//            return size < activeThreads && activeThreads > sizeMin;
-//        }
-
-
-//        List<ThreadWorker> activeWorkers = new ArrayList<>();
-//
-//        for (ThreadWorker worker : pool) {
-//            if (worker != null && !worker.isInterrupted()) {
-//                activeWorkers.add(worker);
-//            }
-//        }
-//
-//        for (int i = 0; i < pool.length; i++) {
-//            if (pool[i].isInterrupted() || pool[i].getState() == Thread.State.TERMINATED) {
-//                pool[i] = new ThreadWorker("ThreadWorker", activeThreads++);
-//                pool[i].start();
-//            }
-//
-//            if (size > sizeMin && size < sizeMax && activeThreads < size) {
-//                if (pool[i].getState() == Thread.State.NEW) {
-//                    pool[i].start();
-//                    activeThreads++;
-//                }
-//            }
-//        }
-//
-//        if (activeThreads > size) {
-//            for (ThreadWorker worker : pool) {
-//                if (worker != null && worker.getState() == Thread.State.WAITING) {
-//                    worker.interrupt();
-//                    activeThreads--;
-//                }
-//            }
-//        }
-
-//        List<Integer> activeThreadsList = new ArrayList<>();
-//
-//        for (Integer key : poolMap.keySet()) {
-//            ThreadWorker worker = poolMap.get(key);
-//            if (!worker.isInterrupted()) {
-//                activeThreadsList.add(key);
-//            }
-//        }
-//
-//        for (Map.Entry<Integer, ThreadWorker> entry : poolMap.entrySet()) {
-//            Integer index = entry.getKey();
-//            ThreadWorker worker = poolMap.get(index);
-//            if (size > sizeMin && activeThreadsList.size() < sizeMax) {
-////                if (!activeThreadsList.contains(key)) {
-////                    worker.start();
-////                    activeThreads++;
-////                }
-//                int newIndex = activeThreadsList.size();
-//                poolMap.put(newIndex, new ThreadWorker("ThreadWorker " + newIndex, newIndex));
-//                poolMap.get(newIndex).start();
-//                activeThreads++;
-//            }
-//
-//            if (activeThreadsList.size() > size
-//                    && poolMap.get(index).getState() == Thread.State.WAITING) {
-//                poolMap.remove(index);
-//                worker.interrupt();
-//                activeThreads--;
-//            }
-//        }
-//
     }
 
     public int getActiveThreads () {
