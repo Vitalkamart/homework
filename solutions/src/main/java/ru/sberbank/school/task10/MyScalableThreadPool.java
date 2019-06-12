@@ -71,7 +71,7 @@ public class MyScalableThreadPool implements ThreadPool {
             tasks.clear();
         }
         activeThreads = 0;     //  before tasks.clear() sometimes "activeThreads = 1"
-                               // in last reading... after "= 0" writing
+                               // in last reading... after "= 0" writing    NB!!! repeat hb rule !!!
     }
 
 
@@ -86,7 +86,7 @@ public class MyScalableThreadPool implements ThreadPool {
     }
 
     @Override
-    public <T > Future < T > execute(Callable < T > callable) {
+    public <T> Future <T> execute(Callable <T> callable) {
         synchronized (tasks) {
             FutureTask<T> futureTask = new FutureTask(callable);
             tasks.add(futureTask);
@@ -165,6 +165,9 @@ public class MyScalableThreadPool implements ThreadPool {
                         boolean needToInterrupt = poolResize();
 
                         if (needToInterrupt) {
+                            synchronized (activeThreadsLock) {
+                                activeThreads--;
+                            }
                             System.out.println("ThreadWorker "+ id + " interrupted");
                             Thread.currentThread().interrupt();
                             break;
