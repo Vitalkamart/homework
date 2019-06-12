@@ -15,9 +15,9 @@ public class MyScalableThreadPool implements ThreadPool {
     private final Object activeThreadsLock = new Object();
     private final int sizeMin;
     private final int sizeMax;
-    private final Queue<Integer> freeIndexForNewWorker;
-    private final Map<Integer, ThreadWorker> poolMap;
-    private final Queue<FutureTask> tasks;
+    private final Queue<Integer> freeIndexForNewWorker = new LinkedList<>();
+    private final Map<Integer, ThreadWorker> poolMap = new HashMap<>();
+    private final Queue<FutureTask> tasks = new LinkedList<>();
 
     public MyScalableThreadPool(int sizeMin, int sizeMax) {
         if (sizeMin <= 0 || sizeMax <= 0 || sizeMax < sizeMin) {
@@ -27,9 +27,6 @@ public class MyScalableThreadPool implements ThreadPool {
         this.sizeMin = sizeMin;
         this.sizeMax = sizeMax;
         this.activeThreads = 0;
-        this.freeIndexForNewWorker = new LinkedList<>();
-        this.poolMap = new HashMap<>();
-        this.tasks = new LinkedList<>();
         fillPoolMap(sizeMin);
     }
 
@@ -40,9 +37,6 @@ public class MyScalableThreadPool implements ThreadPool {
         this.sizeMin = fixedSize;
         this.sizeMax = fixedSize;
         this.activeThreads = 0;
-        this.freeIndexForNewWorker = new LinkedList<>();
-        this.poolMap = new HashMap<>();
-        this.tasks = new LinkedList<>();
         fillPoolMap(fixedSize);
     }
 
@@ -69,14 +63,15 @@ public class MyScalableThreadPool implements ThreadPool {
     @Override
     public void stopNow() {
         synchronized (poolMap) {
-            poolMap.forEach((key, worker) -> {
-                worker.interrupt();
-            });
+            poolMap.forEach((key, worker) -> worker.interrupt());
             poolMap.clear();
-            activeThreads = 0;
             freeIndexForNewWorker.clear();
+        }
+        synchronized (tasks) {
             tasks.clear();
         }
+        activeThreads = 0;     //  before tasks.clear() sometimes "activeThreads = 1"
+                               // in last reading... after "= 0" writing
     }
 
 
@@ -104,7 +99,7 @@ public class MyScalableThreadPool implements ThreadPool {
     *return true if needed to interrupt, otherwise return false
     *  */
     private boolean poolResize () {
-        int taskSize = tasks.size() + 1; // + 1 because we deed poll before resize method
+        int taskSize = tasks.size();
 
         synchronized (poolMap) {
             poolMap.forEach((key, worker) -> {
@@ -167,15 +162,19 @@ public class MyScalableThreadPool implements ThreadPool {
                     }
 
                     if (!Thread.currentThread().isInterrupted()) {
-                        FutureTask task = tasks.poll();
                         boolean needToInterrupt = poolResize();
-                        if (task != null) {
-                            task.run();
-                            System.out.println("ThreadWorker "+ id + " ended");
-                        }
+
                         if (needToInterrupt) {
                             System.out.println("ThreadWorker "+ id + " interrupted");
                             Thread.currentThread().interrupt();
+                            break;
+                        }
+
+                        FutureTask task = tasks.poll();
+
+                        if (task != null) {
+                            task.run();
+                            System.out.println("ThreadWorker "+ id + " ended");
                         }
                     }
                 }
