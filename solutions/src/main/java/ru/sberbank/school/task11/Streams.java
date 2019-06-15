@@ -1,15 +1,27 @@
 package ru.sberbank.school.task11;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import lombok.NonNull;
+
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
  * Облегченная версия класса {@link Stream}
  */
-public class Streams {
+public class Streams<T> {
+    private List<T> list = new ArrayList<>();
+    private List<Supplier<List>> operations = new ArrayList<>();
+
+    private Streams(@NonNull T... elements) {
+        list.addAll(Arrays.asList(elements));
+    }
+
+    private Streams(@NonNull Collection elements) {
+        list.addAll(elements);
+    }
 
     /**
      * Принимает на вход массив элементов и возвращает стрим построенный на основе этих элементов.
@@ -17,8 +29,8 @@ public class Streams {
      * @param elements входные элементы
      * @return стрим элементов из elements
      */
-    public static Streams of(Object... elements) {
-        return null;
+    public static <T> Streams<T> of(@NonNull T... elements) {
+        return new Streams<>(elements);
     }
 
     /**
@@ -27,8 +39,8 @@ public class Streams {
      * @param elements входные элементы
      * @return стрим элементов из elements
      */
-    public static Streams of(Collection elements) {
-        return null;
+    public static <T> Streams<T> of(@NonNull Collection elements) {
+        return new Streams(elements);
     }
 
     /**
@@ -43,8 +55,18 @@ public class Streams {
      * @param object - правило фильтрации элементов.
      * @return стрим
      */
-    public Streams filter(Object object) {
-        return null;
+    public Streams<T> filter(@NonNull Predicate<? super T> object) {
+        Supplier<List> operation = () -> {
+            List<T> result = new ArrayList();
+            for (T it : list) {
+                if (object.test(it)) {
+                    result.add(it);
+                }
+            }
+            return result;
+        };
+        operations.add(operation);
+        return this;
     }
 
     /**
@@ -56,11 +78,19 @@ public class Streams {
      * <p>
      * Intermediate операция.
      *
-     * @param object - правило траснформации элементов.
+     * @param function - правило траснформации элементов.
      * @return стрим
      */
-    public Streams transform(Object object) {
-        return null;
+    public <R> Streams<T> transform(@NonNull Function<T, R> function) {
+        Supplier<List> operation = () -> {
+            List<R> result = new ArrayList<>();
+            for (T it : list) {
+                result.add(function.apply(it));
+            }
+            return result;
+        };
+        operations.add(operation);
+        return this;
     }
 
     /**
@@ -72,11 +102,17 @@ public class Streams {
      * <p>
      * Intermediate операция.
      *
-     * @param object - правило сортировки элементов.
+     * @param comparator - правило сортировки элементов.
      * @return стрим
      */
-    public Streams sorted(Object object) {
-        return null;
+    public Streams<T> sorted(@NonNull Comparator<? super T> comparator) {
+        Supplier<List> operation = () -> {
+            List<T> sorted = new ArrayList<>(list);
+            sorted.sort(comparator);
+            return sorted;
+        };
+        operations.add(operation);
+        return this;
     }
 
     /**
@@ -90,8 +126,12 @@ public class Streams {
      * @param valueMapper - правило создания значения.
      * @return Map, собранная по правилам keyMapper и valueMapper
      */
-    public Map toMap(Object keyMapper, Object valueMapper) {
-        return null;
+    public <K, V> Map<K, V> toMap(@NonNull Function<T, K> keyMapper,@NonNull  Function<T, V> valueMapper) {
+        Map<K, V> map = new HashMap<>();
+        for (T it : list) {
+            map.put(keyMapper.apply(it), valueMapper.apply(it));
+        }
+        return map;
     }
 
     /**
@@ -104,8 +144,8 @@ public class Streams {
      *
      * @return Set элементов
      */
-    public Set toSet() {
-        return null;
+    public Set<T> toSet() {
+        return new LinkedHashSet(doOperations());
     }
 
     /**
@@ -117,8 +157,15 @@ public class Streams {
      *
      * @return List элементов
      */
-    public List toList() {
-        return null;
+    public List<T> toList() {
+        return new ArrayList<>(doOperations());
     }
 
+    private List doOperations() {
+        List resultList = new ArrayList();
+        for (Supplier<List> supplier : operations) {
+            resultList = supplier.get();
+        }
+        return resultList;
+    }
 }
